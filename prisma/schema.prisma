@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model books {
+  id             Int         @id @default(autoincrement())
+  title          String      @db.VarChar(255)
+  author         String      @db.VarChar(255)
+  description    String?     @db.Text
+  published_year Int?
+  created_at     DateTime?   @default(now()) @db.Timestamp(0)
+  reviews        reviews[]
+  watchlist      watchlist[]
+}
+
+model friends {
+  user_id                        Int
+  friend_id                      Int
+  created_at                     DateTime? @default(now()) @db.Timestamp(0)
+  users_friends_user_idTousers   users     @relation("friends_user_idTousers", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "friends_ibfk_1")
+  users_friends_friend_idTousers users     @relation("friends_friend_idTousers", fields: [friend_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "friends_ibfk_2")
+
+  @@id([user_id, friend_id])
+  @@index([friend_id], map: "friend_id")
+}
+
+model review_likes {
+  id         Int       @id @default(autoincrement())
+  review_id  Int
+  user_id    Int
+  created_at DateTime? @default(now()) @db.Timestamp(0)
+  reviews    reviews   @relation(fields: [review_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "review_likes_ibfk_1")
+  users      users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "review_likes_ibfk_2")
+
+  @@unique([review_id, user_id], map: "review_id")
+  @@index([user_id], map: "user_id")
+}
+
+model reviews {
+  id           Int            @id @default(autoincrement())
+  user_id      Int
+  book_id      Int
+  review_text  String?        @db.Text
+  rating       Int?           @db.TinyInt
+  created_at   DateTime?      @default(now()) @db.Timestamp(0)
+  review_likes review_likes[]
+  users        users          @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "reviews_ibfk_1")
+  books        books          @relation(fields: [book_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "reviews_ibfk_2")
+
+  @@index([book_id], map: "book_id")
+  @@index([user_id], map: "user_id")
+}
+
+model users {
+  id                               Int            @id @default(autoincrement())
+  username                         String         @unique(map: "username") @db.VarChar(50)
+  email                            String         @unique(map: "email") @db.VarChar(100)
+  password                         String         @db.VarChar(255)
+  created_at                       DateTime?      @default(now()) @db.Timestamp(0)
+  friends_friends_user_idTousers   friends[]      @relation("friends_user_idTousers")
+  friends_friends_friend_idTousers friends[]      @relation("friends_friend_idTousers")
+  review_likes                     review_likes[]
+  reviews                          reviews[]
+  sessions                         sessions[]
+  watchlist                        watchlist[]
+}
+
+model watchlist {
+  user_id  Int
+  book_id  Int
+  added_at DateTime? @default(now()) @db.Timestamp(0)
+  users    users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "watchlist_ibfk_1")
+  books    books     @relation(fields: [book_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "watchlist_ibfk_2")
+
+  @@id([user_id, book_id])
+  @@index([book_id], map: "book_id")
+}
+
+model sessions {
+  ses_id              Int       @id @default(autoincrement())
+  ses_key             String?   @db.VarChar(40)
+  ses_ip              String?   @db.VarChar(20)
+  ses_location        String?   @db.VarChar(40)
+  ses_city            String?   @db.VarChar(100)
+  ses_state           String?   @db.VarChar(100)
+  ses_country         String?   @db.VarChar(20)
+  ses_timezone        String?   @db.VarChar(100)
+  ses_status          Int?      @default(1)
+  ses_company         Int?
+  ses_created_at      DateTime? @default(now()) @db.DateTime(0)
+  ses_expiration_date DateTime? @db.DateTime(0)
+  ses_client          Int?      @default(1)
+  ses_user            Int?
+  users               users?    @relation(fields: [ses_user], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "sessions_ibfk_1")
+
+  @@index([ses_user], map: "ses_user")
+}
