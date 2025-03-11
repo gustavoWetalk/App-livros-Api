@@ -29,23 +29,27 @@ routerAuth.post("/create", async (req, res): Promise<void> => {
   const parseResult = userSchema.safeParse(req.body);
 
   if (!parseResult.success) {
-    const errorMessages = parseResult.error.issues.map(
-      (issue) => issue.message
-    );
+    const errorMessages = parseResult.error.issues.map((issue) => ({
+      message: issue.message,
+    }));
+
     res.status(400).json({ message: errorMessages });
     return;
   }
 
   const { userName, email, password } = parseResult.data;
+
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const userAlreadyExists = await prisma.users.findUnique({
       where: { email },
     });
+
     if (userAlreadyExists) {
       res.status(400).json({ message: "Usuário já cadastrado no sistema" });
       return;
     }
+
     const createdUser = await prisma.users.create({
       data: {
         username: userName,
@@ -53,39 +57,42 @@ routerAuth.post("/create", async (req, res): Promise<void> => {
         password: hashedPassword,
       },
     });
+
     if (!createdUser) {
       res.status(400).json({ message: "Erro ao criar usuário" });
       return;
-    } else {
-      const code: string = await sessionGenerator(createdUser.id);
-      if (code === "Error") {
-        res.status(505).json({
-          message: "Erro interno do servidor. Entre em contato com o suporte",
-        });
-        return;
-      }
-      const token = jwt.sign(
-        {
-          user: createdUser.id,
-          client: "API",
-        },
-        code,
-        {
-          expiresIn: "2h",
-        }
-      );
-      res.status(200).json({
-        token,
-        user: {
-          id: createdUser.id,
-          email: createdUser.email,
-          username: createdUser.password,
-          createdAt: createdUser.created_at,
-        },
-        message: "Usuário criado com sucesso",
+    }
+
+    const code: string = await sessionGenerator(createdUser.id);
+    if (code === "Error") {
+      res.status(500).json({
+        message: "Erro interno do servidor. Entre em contato com o suporte",
       });
       return;
     }
+
+    const token = jwt.sign(
+      {
+        user: createdUser.id,
+        client: "API",
+      },
+      code,
+      {
+        expiresIn: "2h",
+      }
+    );
+
+    res.status(201).json({
+      token,
+      user: {
+        id: createdUser.id,
+        email: createdUser.email,
+        username: createdUser.username,
+        createdAt: createdUser.created_at,
+      },
+      message: "Usuário criado com sucesso",
+    });
+    return;
   } catch (error) {
     console.error("Erro durante a criação de usuário:", error);
     res.status(500).json({ message: "Erro interno do servidor." });
