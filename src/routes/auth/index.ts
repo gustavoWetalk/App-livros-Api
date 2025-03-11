@@ -29,7 +29,9 @@ routerAuth.post("/create", async (req, res): Promise<void> => {
   const parseResult = userSchema.safeParse(req.body);
 
   if (!parseResult.success) {
-    const errorMessages = parseResult.error.issues.map(issue => issue.message);
+    const errorMessages = parseResult.error.issues.map(
+      (issue) => issue.message
+    );
     res.status(400).json({ message: errorMessages });
     return;
   }
@@ -78,10 +80,9 @@ routerAuth.post("/create", async (req, res): Promise<void> => {
           id: createdUser.id,
           email: createdUser.email,
           username: createdUser.password,
-          userId: createdUser.created_at,
+          createdAt: createdUser.created_at,
         },
-        message:
-          "Usuário criado com sucesso. Código enviado para o seu e-mail.",
+        message: "Usuário criado com sucesso",
       });
       return;
     }
