@@ -94,6 +94,25 @@ describe("Testando rota de criação de usuário", () => {
     ]);
   });
 
+  it("O usuário não pode ser criado, pois a senha não possui caractere especial", async () => {
+    const response = await request(app)
+      .post("/auth/create")
+      .send({
+        userName: "Gustavoooo",
+        email: "gustavo@fuffuf.com.br",
+        password: "Batata12345",
+      })
+      .expect("Content-Type", /json/)
+      .expect(400);
+
+    expect(response.body).toHaveProperty("message");
+    expect(Array.isArray(response.body.message)).toBe(true);
+    expect(response.body.message).toContainEqual({
+      message:
+        "A senha deve conter pelo menos um caractere especial e uma letra maiúscula",
+    });
+  });
+
   it("Cria o usuário com sucesso se os dados forem válidos", async () => {
     prismaMock.users.findUnique.mockResolvedValue(null);
     prismaMock.users.create.mockResolvedValue({
