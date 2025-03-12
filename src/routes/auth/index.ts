@@ -1,12 +1,12 @@
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../../prisma"; 
 import {
   extractUserDataFromToken,
   validateJWT,
 } from "../../middlewares/checkJWT";
 import { z } from "zod";
 
-const prisma = new PrismaClient();
+
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
