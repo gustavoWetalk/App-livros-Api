@@ -1,11 +1,10 @@
 import { Router } from "express";
-import prisma from "../../prisma"; 
+import prisma from "../../prisma";
 import {
   extractUserDataFromToken,
   validateJWT,
 } from "../../middlewares/checkJWT";
 import { z } from "zod";
-
 
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
@@ -97,6 +96,57 @@ routerAuth.post("/create", async (req, res): Promise<void> => {
     console.error("Erro durante a criação de usuário:", error);
     res.status(500).json({ message: "Erro interno do servidor." });
     return;
+  }
+});
+
+routerAuth.post("/login", async (req, res): Promise<void> => {
+  const { email, password } = req.body;
+  try {
+    if (!email || !password) {
+      res.status(400).json({ message: "erro ao logar" });
+      return;
+    }
+    const user = await prisma.users.findUnique({
+      where: {
+        email: email,
+      },
+    });
+    if (!user) {
+      res.status(401).json({ message: "senha ou email inválido" });
+      return;
+    }
+    const checkPassword = await bcrypt.compare(password, user.password);
+    if (!checkPassword) {
+      res.status(401).json({ message: "senha ou email inválido" });
+      return;
+    }
+    const code: string = await sessionGenerator(user.id);
+    if (code === "Error") {
+      res.status(505).json({
+        message: "Erro interno do servidor. Entre em contato com o suporte",
+      });
+    }
+    const token = jwt.sign(
+      {
+        user: user.id,
+        client: "API",
+      },
+      code,
+      {
+        expiresIn: "2h",
+      }
+    );
+    res.status(200).json({
+      token,
+      user: {
+        id: user.id,
+        name: user.username,
+        email: user.email,
+      },
+    });
+  } catch (error) {
+    console.error("Erro durante o login:", error);
+    res.status(500).json({ message: "Erro interno do servidor." });
   }
 });
 
