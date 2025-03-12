@@ -118,8 +118,8 @@ describe("Testando rota de criação de usuário", () => {
     prismaMock.users.create.mockResolvedValue({
       id: 14,
       username: "Lucassssss",
-      email: "lucas@examplwweeee345.com",
-      password: "Hashedpassword",
+      email: "lucas@examplwweeee3450.com",
+      password: "Uhufeuhfeuhef123@",
       created_at: new Date(),
     });
 
@@ -140,15 +140,41 @@ describe("Testando rota de criação de usuário", () => {
       .post("/auth/create")
       .send({
         userName: "Lucasssssssss",
-        email: "lucas@examplwweeee345.com",
-        password: "Hashedpassword@@",
+        email: "lucas@examplwweeee3450.com",
+        password: "Uhufeuhfeuhef123@",
       })
       .expect("Content-Type", /json/)
       .expect(201);
 
     expect(response.body).toHaveProperty("token");
     expect(response.body).toHaveProperty("user");
-    expect(response.body.user.email).toEqual("lucas@examplwweeee345.com");
+    expect(response.body.user.email).toEqual("lucas@examplwweeee3450.com");
     expect(response.body.message).toEqual("Usuário criado com sucesso");
+  });
+
+  it("O usuário não pode logar, pois as credenciais não pertencem a nenhum usuário", async () => {
+    const response = await request(app)
+      .post("/auth/login")
+      .send({
+        email: "lucas@123hfnf.com",
+        password: "Hashedpassword",
+      })
+      .expect("Content-Type", /json/)
+      .expect(401);
+
+    expect(response.body).toHaveProperty("message", "senha ou email inválido");
+  });
+
+  it("O usuário não pode logar, pois nenhuma informação foi passada para os inputs de email e senha", async () => {
+    const response = await request(app)
+      .post("/auth/login")
+      .send({
+        email: "",
+        password: "",
+      })
+      .expect("Content-Type", /json/)
+      .expect(400);
+
+    expect(response.body).toHaveProperty("message", "erro ao logar");
   });
 });
