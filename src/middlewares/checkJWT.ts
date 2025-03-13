@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import jwt, { Secret } from "jsonwebtoken"; 
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
+import jwt, { Secret } from "jsonwebtoken";
+import prisma from "../prisma";
+
 
 export const extractUserFromToken = (token: string) => {
   try {
@@ -43,29 +43,30 @@ export const validateJWT = async (
 ) => {
   const token = req.header("Authorization");
   if (!token) {
-    return res
-      .status(401)
-      .json({ message: "Authorization token not provided." });
+    res.status(401).json({ message: "Authorization token not provided." });
+    return;
   }
 
   const userId = await extractUserFromToken(token);
   if (userId === null) {
-    return res.status(401).json({ message: "Invalid JWT token." });
+    res.status(401).json({ message: "Invalid JWT token." });
+    return;
   }
 
   const secretKey = await getSessionKey(userId);
   if (secretKey === null) {
-    return res.status(401).json({ message: "Invalid JWT token." });
+    res.status(401).json({ message: "Invalid JWT token." });
+    return;
   }
 
   try {
     const decoded = jwt.verify(token, secretKey as Secret);
     next();
   } catch (error) {
-    return res.status(401).json({ message: "Invalid authorization token." });
+    res.status(401).json({ message: "Invalid authorization token." });
+    return;
   }
 };
-
 
 export const extractUserDataFromToken = async (req: Request, res: Response) => {
   const token = req.header("Authorization");

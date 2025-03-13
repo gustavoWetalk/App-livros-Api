@@ -1,13 +1,8 @@
 import { prismaMock } from "../src/singleton";
 import request from "supertest";
-import express from "express";
-import { routerAuth } from "../src/routes/auth";
 import { mockReset } from "jest-mock-extended";
+import { app } from "../src/app";
 
-const app = express();
-
-app.use(express.json());
-app.use("/auth", routerAuth);
 const bcrypt = require("bcryptjs");
 
 const fakeUser = {

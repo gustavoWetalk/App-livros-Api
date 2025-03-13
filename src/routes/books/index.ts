@@ -5,7 +5,6 @@ import {
   validateJWT,
 } from "../../middlewares/checkJWT";
 import { z } from "zod";
-
 export const routerBooks = Router();
 
 const bookSchema = z.object({
@@ -26,7 +25,7 @@ const bookSchema = z.object({
     .optional(),
 });
 
-routerBooks.post("create", async (req, res) => {
+routerBooks.post("/create", validateJWT, async (req, res): Promise<void> => {
   const parseResult = bookSchema.safeParse(req.body);
 
   if (!parseResult.success) {
@@ -39,23 +38,26 @@ routerBooks.post("create", async (req, res) => {
   }
 
   const { title, author, description, published_year } = parseResult.data;
+
   try {
     const book = await prisma.books.create({
       data: {
-        title: title,
-        author: author,
-        description: description,
-        published_year: published_year,
+        title,
+        author,
+        description,
+        published_year,
       },
     });
+
     res.status(201).json({
       book: {
         id: book.id,
+        title: book.title,
         author: book.author,
         description: book.description,
         published_year: book.published_year,
       },
-      message: "Book criado com sucesso",
+      message: "Livro criado com sucesso",
     });
   } catch (error) {
     console.error("Erro durante a criação de usuário:", error);
