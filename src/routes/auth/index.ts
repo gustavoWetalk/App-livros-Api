@@ -13,10 +13,14 @@ const jwt = require("jsonwebtoken");
 export const routerAuth = Router();
 
 const userSchema = z.object({
-  userName: z.string().min(1, "O nome de usuário é obrigatório"),
-  email: z.string().email("Email inválido"),
+  userName: z.string().nonempty("Informações sem dados não são aceitas"),
+  email: z
+    .string()
+    .nonempty("Informações sem dados não são aceitas")
+    .email("Email inválido"),
   password: z
     .string()
+    .nonempty("Informações sem dados não são aceitas")
     .min(8, "A senha deve ter pelo menos 8 caracteres")
     .regex(
       /^(?=.*[!@#$%^&*])(?=.*[A-Z]).+$/,
@@ -24,7 +28,7 @@ const userSchema = z.object({
     ),
 });
 
-routerAuth.post("/create", async (req, res): Promise<void> => {
+routerAuth.post("/create", async (req, res) => {
   const parseResult = userSchema.safeParse(req.body);
 
   if (!parseResult.success) {

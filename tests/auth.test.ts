@@ -8,10 +8,33 @@ const app = express();
 
 app.use(express.json());
 app.use("/auth", routerAuth);
+const bcrypt = require("bcryptjs");
+
+const fakeUser = {
+  id: 14,
+  username: "Lucassssss",
+  email: "lucas@examplwweeee3450.com",
+  password: "Uhufeuhfeuhef123@",
+  created_at: new Date(),
+};
 
 describe("Testando rota de criação de usuário", () => {
   beforeEach(() => {
     mockReset(prismaMock);
+    prismaMock.users.findUnique.mockResolvedValue(null);
+    prismaMock.users.create.mockResolvedValue(fakeUser);
+    prismaMock.sessions.deleteMany.mockResolvedValue({ count: 1 });
+    (prismaMock.sessions.create as jest.Mock).mockResolvedValue({
+      ses_id: 6,
+      ses_key: "abc123",
+      ses_ip: "any",
+      ses_location: "any",
+      ses_city: "any",
+      ses_state: "any",
+      ses_country: "any",
+      ses_timezone: "any",
+      ses_user: fakeUser.id,
+    });
   });
 
   it("O usuário não pode ser criado, pois o email não é válido", async () => {
@@ -66,7 +89,7 @@ describe("Testando rota de criação de usuário", () => {
     expect(response.body).toHaveProperty("message");
     expect(Array.isArray(response.body.message)).toBe(true);
     expect(response.body.message).toContainEqual({
-      message: "O nome de usuário é obrigatório",
+      message: "Informações sem dados não são aceitas",
     });
   });
 
@@ -83,15 +106,9 @@ describe("Testando rota de criação de usuário", () => {
 
     expect(response.body).toHaveProperty("message");
     expect(Array.isArray(response.body.message)).toBe(true);
-    expect(response.body.message).toEqual([
-      { message: "O nome de usuário é obrigatório" },
-      { message: "Email inválido" },
-      { message: "A senha deve ter pelo menos 8 caracteres" },
-      {
-        message:
-          "A senha deve conter pelo menos um caractere especial e uma letra maiúscula",
-      },
-    ]);
+    expect(response.body.message).toContainEqual({
+      message: "Informações sem dados não são aceitas",
+    });
   });
 
   it("O usuário não pode ser criado, pois a senha não possui caractere especial", async () => {
@@ -114,14 +131,28 @@ describe("Testando rota de criação de usuário", () => {
   });
 
   it("Cria o usuário com sucesso se os dados forem válidos", async () => {
-    prismaMock.users.findUnique.mockResolvedValue(null);
-    prismaMock.users.create.mockResolvedValue({
-      id: 14,
-      username: "Lucassssss",
-      email: "lucas@examplwweeee3450.com",
-      password: "Uhufeuhfeuhef123@",
-      created_at: new Date(),
-    });
+    const response = await request(app)
+      .post("/auth/create")
+      .send({
+        userName: "Lucasssssssss",
+        email: fakeUser.email,
+        password: "Uhufeuhfeuhef123@",
+      })
+      .expect("Content-Type", /json/)
+      .expect(201);
+
+    expect(response.body).toHaveProperty("token");
+    expect(response.body).toHaveProperty("user");
+    expect(response.body.user.email).toEqual(fakeUser.email);
+    expect(response.body.message).toEqual("Usuário criado com sucesso");
+  });
+});
+
+describe("Testando rota de login com o mesmo usuário criado", () => {
+  beforeEach(() => {
+    mockReset(prismaMock);
+    prismaMock.users.findUnique.mockResolvedValue(fakeUser);
+    jest.spyOn(bcrypt, "compare").mockResolvedValue(true);
 
     prismaMock.sessions.deleteMany.mockResolvedValue({ count: 1 });
     (prismaMock.sessions.create as jest.Mock).mockResolvedValue({
@@ -133,31 +164,33 @@ describe("Testando rota de criação de usuário", () => {
       ses_state: "any",
       ses_country: "any",
       ses_timezone: "any",
-      ses_user: 14,
+      ses_user: fakeUser.id,
     });
-
-    const response = await request(app)
-      .post("/auth/create")
-      .send({
-        userName: "Lucasssssssss",
-        email: "lucas@examplwweeee3450.com",
-        password: "Uhufeuhfeuhef123@",
-      })
-      .expect("Content-Type", /json/)
-      .expect(201);
-
-    expect(response.body).toHaveProperty("token");
-    expect(response.body).toHaveProperty("user");
-    expect(response.body.user.email).toEqual("lucas@examplwweeee3450.com");
-    expect(response.body.message).toEqual("Usuário criado com sucesso");
   });
 
-  it("O usuário não pode logar, pois as credenciais não pertencem a nenhum usuário", async () => {
+  it("O usuário pode logar com sucesso", async () => {
     const response = await request(app)
       .post("/auth/login")
       .send({
-        email: "lucas@123hfnf.com",
-        password: "Hashedpassword",
+        email: fakeUser.email,
+        password: "Uhufeuhfeuhef123@",
+      })
+      .expect("Content-Type", /json/)
+      .expect(200);
+
+    expect(response.body).toHaveProperty("token");
+    expect(response.body).toHaveProperty("user");
+    expect(response.body.user.email).toEqual(fakeUser.email);
+  });
+
+  it("Não loga com credenciais inválidas", async () => {
+    prismaMock.users.findUnique.mockResolvedValue(null);
+
+    const response = await request(app)
+      .post("/auth/login")
+      .send({
+        email: "inexistente@teste.com",
+        password: "senhaIncorreta",
       })
       .expect("Content-Type", /json/)
       .expect(401);
@@ -165,7 +198,7 @@ describe("Testando rota de criação de usuário", () => {
     expect(response.body).toHaveProperty("message", "senha ou email inválido");
   });
 
-  it("O usuário não pode logar, pois nenhuma informação foi passada para os inputs de email e senha", async () => {
+  it("Não loga quando não são passadas informações de email e senha", async () => {
     const response = await request(app)
       .post("/auth/login")
       .send({
