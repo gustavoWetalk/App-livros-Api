@@ -65,3 +65,19 @@ routerBooks.post("/create", validateJWT, async (req, res): Promise<void> => {
     return;
   }
 });
+
+routerBooks.get("/list", validateJWT, async (req, res): Promise<void> => {
+  try {
+    const books = await prisma.books.findMany();
+    if (!books || books.length === 0) {
+      res.status(404).json({ message: "Nenhum livro cadastrado no sistema" });
+      return;
+    }
+    res.status(200).json({ books });
+    return;
+  } catch (error) {
+    console.error("Erro durante a listagem dos livros:", error);
+    res.status(500).json({ message: "Erro interno do servidor." });
+    return;
+  }
+});

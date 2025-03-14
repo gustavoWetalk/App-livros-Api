@@ -18,9 +18,6 @@ describe("Testando rota de criação de livros", () => {
     mockReset(prismaMock);
     prismaMock.books.findUnique.mockResolvedValue(null);
     prismaMock.books.create.mockResolvedValue(fakeBook);
-    (prismaMock.sessions.create as jest.Mock).mockResolvedValue({
-      ses_key: "myTestSessionKey",
-    });
 
     (prismaMock.sessions.findFirst as jest.Mock).mockResolvedValue({
       ses_key: "myTestSessionKey",
@@ -104,5 +101,77 @@ describe("Testando rota de criação de livros", () => {
       .expect(201);
 
     expect(response.body).toHaveProperty("message", "Livro criado com sucesso");
+  });
+
+  it("Não é possível criar o livro no sistema, pois o seu ano de lançamento não é um inteiro", async () => {
+    const token = jwt.sign({ user: 1, client: "API" }, "myTestSessionKey", {
+      expiresIn: "2h",
+    });
+    const response = await request(app)
+      .post("/books/create")
+      .set("Authorization", token)
+      .send({
+        title: "uhduhdsuhudshuhfduhsfd",
+        author: "udhudhudhudfhudshud",
+        description: "Uhufeuhfeuhef123@",
+        published_year: "",
+      })
+      .expect("Content-Type", /json/)
+      .expect(400);
+
+    expect(response.body.message).toContainEqual({
+      message: "O ano de publicação deve ser um número",
+    });
+  });
+
+  it("Não é possível criar o livro no sistema, pois a descrição não é  uma string", async () => {
+    const token = jwt.sign({ user: 1, client: "API" }, "myTestSessionKey", {
+      expiresIn: "2h",
+    });
+    const response = await request(app)
+      .post("/books/create")
+      .set("Authorization", token)
+      .send({
+        title: "uhduhdsuhudshuhfduhsfd",
+        author: "udhudhudhudfhudshud",
+        description: 1990,
+        published_year: 1980,
+      })
+      .expect("Content-Type", /json/)
+      .expect(400);
+
+    expect(response.body.message).toContainEqual({
+      message: "Expected string, received number",
+    });
+  });
+
+  it("retorna mensagem de erro, pois o sistema não possui nenhum livro cadastrado", async () => {
+    const token = jwt.sign({ user: 1, client: "API" }, "myTestSessionKey", {
+      expiresIn: "2h",
+    });
+    const response = await request(app)
+      .get("/books/list")
+      .set("Authorization", token)
+      .expect("Content-Type", /json/)
+      .expect(404);
+
+    expect(response.body).toHaveProperty(
+      "message",
+      "Nenhum livro cadastrado no sistema"
+    );
+  });
+
+  it("retorna os livros que estão cadastrados no sistema com sucesso", async () => {
+    prismaMock.books.findMany.mockResolvedValue([fakeBook]);
+    const token = jwt.sign({ user: 1, client: "API" }, "myTestSessionKey", {
+      expiresIn: "2h",
+    });
+
+    const response = await request(app)
+      .get("/books/list")
+      .set("Authorization", token)
+      .expect("Content-Type", /json/)
+      .expect(200);
+    expect(response.body).toHaveProperty("books");
   });
 });
