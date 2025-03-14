@@ -82,7 +82,29 @@ describe("Testando rota de criação de review", () => {
     });
   });
 
+  it("Não será possível criar a review, pois o livro não existe no sistema", async () => {
+    const token = jwt.sign({ user: 1, client: "API" }, "myTestSessionKey", {
+      expiresIn: "2h",
+    });
+
+    const response = await request(app)
+      .post("/review/create/1234")
+      .set("Authorization", token)
+      .send({
+        review_text: "hufuhhufhuew",
+        rating: 5,
+      })
+      .expect("Content-Type", /json/)
+      .expect(400);
+
+    expect(response.body).toHaveProperty(
+      "message",
+      "Livro não se encontra no sistema"
+    );
+  });
+
   it("Criar a review, pois todos os dados estão sendo criados corretamente", async () => {
+    prismaMock.books.findUnique.mockResolvedValue(fakeBook);
     const token = jwt.sign({ user: 1, client: "API" }, "myTestSessionKey", {
       expiresIn: "2h",
     });
