@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from "express";
 import jwt, { Secret } from "jsonwebtoken";
 import prisma from "../prisma";
 
-
 export const extractUserFromToken = (token: string) => {
   try {
     const decoded = jwt.decode(token);
@@ -68,22 +67,22 @@ export const validateJWT = async (
   }
 };
 
-export const extractUserDataFromToken = async (req: Request, res: Response) => {
+export const extractUserDataFromToken = async (req: Request) => {
   const token = req.header("Authorization");
   if (!token) {
-    return res.status(401).json({ message: "Invalid session data" });
+    throw new Error("Invalid session data");
   }
 
   try {
     const decoded = jwt.decode(token);
     if (decoded && typeof decoded === "object" && "user" in decoded) {
-      const user = prisma.users.findFirst({
+      const user = await prisma.users.findFirst({
         where: { id: decoded["user"] },
       });
-
+      if (!user) throw new Error("User not found");
       return user;
     }
-    return null;
+    throw new Error("Invalid token payload");
   } catch (error) {
     throw new Error("Error decoding the JWT token");
   }
