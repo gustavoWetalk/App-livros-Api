@@ -9,10 +9,10 @@ export const routerReview = Router();
 
 const reviewSchema = z.object({
   review_text: z
-    .string({ message: "A nota da publicação deve ser um número inteiro" })
+    .string({ message: "A review do usuário deve ser uma string" })
     .optional(),
   rating: z
-    .number({ message: "A nota da publicação deve ser um número inteiro" })
+    .number({ message: "A nota deve ser um número" })
     .int({ message: "A  nota de publicação deve ser um número inteiro" }),
 });
 

@@ -42,7 +42,47 @@ describe("Testando rota de criação de review", () => {
     });
   });
 
-  it("Não criar o livro, pois o campo de título não foi preenchido", async () => {
+  it("Não será possível criar a review, pois o texto da review é um número e não uma string", async () => {
+    const token = jwt.sign({ user: 1, client: "API" }, "myTestSessionKey", {
+      expiresIn: "2h",
+    });
+
+    const response = await request(app)
+      .post("/review/create/1")
+      .set("Authorization", token)
+      .send({
+        review_text: 12345,
+        rating: 5,
+      })
+      .expect("Content-Type", /json/)
+      .expect(400);
+
+    expect(response.body.message).toContainEqual({
+      message: "A review do usuário deve ser uma string",
+    });
+  });
+
+  it("Não será possível criar a review, pois a nota da review é uma string e não um número", async () => {
+    const token = jwt.sign({ user: 1, client: "API" }, "myTestSessionKey", {
+      expiresIn: "2h",
+    });
+
+    const response = await request(app)
+      .post("/review/create/1")
+      .set("Authorization", token)
+      .send({
+        review_text: "hufuhhufhuew",
+        rating: "122345",
+      })
+      .expect("Content-Type", /json/)
+      .expect(400);
+
+    expect(response.body.message).toContainEqual({
+      message: "A nota deve ser um número",
+    });
+  });
+
+  it("Criar a review, pois todos os dados estão sendo criados corretamente", async () => {
     const token = jwt.sign({ user: 1, client: "API" }, "myTestSessionKey", {
       expiresIn: "2h",
     });
