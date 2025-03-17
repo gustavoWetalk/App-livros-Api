@@ -261,21 +261,42 @@ describe("Testando rota de criação de review", () => {
     );
   });
 
-  it("Delete da review realizada com sucesso no sistema", async () => {
-    prismaMock.reviews.deleteMany.mockResolvedValue({ count: 1 });
+  it("Não mostrar nenhuma review, pois o usuário não tem nenhuma cadastrada", async () => {
+    const response = await request(app)
+      .get("/review/user-reviews")
+      .expect("Content-Type", /json/)
+      .expect(401);
+    expect(response.body).toHaveProperty(
+      "message",
+      "Authorization token not provided."
+    );
+  });
+
+  it("Não mostrar nenhuma review, pois o usuário não tem nenhuma cadastrada", async () => {
     const token = jwt.sign({ user: 1, client: "API" }, "myTestSessionKey", {
       expiresIn: "2h",
     });
-
     const response = await request(app)
-      .delete("/review/delete/1")
+      .get("/review/user-reviews")
+      .set("Authorization", token)
+      .expect("Content-Type", /json/)
+      .expect(401);
+    expect(response.body).toHaveProperty(
+      "message",
+      "Usuário não possui nenhuma review de livro"
+    );
+  });
+
+  it("Mostrar a lista de reviews do usuário no sistema", async () => {
+    prismaMock.reviews.findMany.mockResolvedValue([fakeReview]);
+    const token = jwt.sign({ user: 1, client: "API" }, "myTestSessionKey", {
+      expiresIn: "2h",
+    });
+    const response = await request(app)
+      .get("/review/user-reviews")
       .set("Authorization", token)
       .expect("Content-Type", /json/)
       .expect(200);
-
-    expect(response.body).toHaveProperty(
-      "message",
-      "Review excluída com sucesso do sistema"
-    );
+    expect(response.body).toHaveProperty("userReviews");
   });
 });

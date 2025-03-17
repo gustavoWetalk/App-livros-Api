@@ -94,6 +94,7 @@ routerReview.get(
         res
           .status(401)
           .json({ message: "Usuário não possui nenhuma review de livro" });
+        return;
       }
       res.status(200).json({ userReviews });
     } catch (error) {
