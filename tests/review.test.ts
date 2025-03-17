@@ -82,6 +82,29 @@ describe("Testando rota de criação de review", () => {
     });
   });
 
+  it("Não será possível criar a review, pois a nota é uma string e o review_text é um number", async () => {
+    const token = jwt.sign({ user: 1, client: "API" }, "myTestSessionKey", {
+      expiresIn: "2h",
+    });
+
+    const response = await request(app)
+      .post("/review/create/1")
+      .set("Authorization", token)
+      .send({
+        review_text: 12345,
+        rating: "122345",
+      })
+      .expect("Content-Type", /json/)
+      .expect(400);
+
+    expect(response.body.message).toEqual([
+      { message: "A review do usuário deve ser uma string" },
+      {
+        message: "A nota deve ser um número",
+      },
+    ]);
+  });
+
   it("Não será possível criar a review, pois o livro não existe no sistema", async () => {
     const token = jwt.sign({ user: 1, client: "API" }, "myTestSessionKey", {
       expiresIn: "2h",
@@ -122,6 +145,101 @@ describe("Testando rota de criação de review", () => {
     expect(response.body).toHaveProperty(
       "message",
       "Review criada com sucesso no sistema"
+    );
+  });
+
+  it("Não foi possível atualizar uma review, pois ela não se encontra no sistema", async () => {
+    prismaMock.books.findUnique.mockResolvedValue(fakeBook);
+    const token = jwt.sign({ user: 1, client: "API" }, "myTestSessionKey", {
+      expiresIn: "2h",
+    });
+
+    const response = await request(app)
+      .put("/review/edit/2")
+      .set("Authorization", token)
+      .send({
+        review_text: "duhuhduduwhuwdh",
+        rating: 5,
+      })
+      .expect("Content-Type", /json/)
+      .expect(401);
+
+    expect(response.body).toHaveProperty(
+      "message",
+      "Review não encontrada no sistema"
+    );
+  });
+
+  it("Informações da review atualizadas com sucesso", async () => {
+    prismaMock.reviews.findUnique.mockResolvedValue(fakeReview);
+    prismaMock.reviews.update.mockResolvedValue(fakeReview);
+
+    const token = jwt.sign({ user: 1, client: "API" }, "myTestSessionKey", {
+      expiresIn: "2h",
+    });
+
+    const response = await request(app)
+      .put("/review/edit/1")
+      .set("Authorization", token)
+      .send({
+        review_text: "duhuhduduwhuwdh",
+        rating: 5,
+      })
+      .expect("Content-Type", /json/)
+      .expect(200);
+
+    expect(response.body).toHaveProperty(
+      "message",
+      "Review editada com sucesso"
+    );
+  });
+
+  it("Informações da review atualizadas com sucesso", async () => {
+    prismaMock.reviews.findUnique.mockResolvedValue(fakeReview);
+    prismaMock.reviews.update.mockResolvedValue(fakeReview);
+
+    const token = jwt.sign({ user: 1, client: "API" }, "myTestSessionKey", {
+      expiresIn: "2h",
+    });
+
+    const response = await request(app)
+      .put("/review/edit/1")
+      .set("Authorization", token)
+      .send({
+        review_text: 1234567,
+        rating: "gergerggrerggreer",
+      })
+      .expect("Content-Type", /json/)
+      .expect(400);
+
+    expect(response.body.message).toEqual([
+      { message: "A review do usuário deve ser uma string" },
+      {
+        message: "A nota deve ser um número",
+      },
+    ]);
+  });
+
+  it("Não é possível fazer a exclusão da review no sistema", async () => {
+    prismaMock.reviews.deleteMany.mockResolvedValue({ count: 0 });
+
+    const token = jwt.sign({ user: 1, client: "API" }, "myTestSessionKey", {
+      expiresIn: "2h",
+    });
+
+    const response = await request(app)
+      .delete("/review/delete/3")
+      .set("Authorization", token)
+      .send({
+        review_text: 1234567,
+        rating: "gergerggrerggreer",
+      })
+      .expect("Content-Type", /json/)
+      .expect(404);
+
+    expect(response.body).toHaveProperty(
+      "message",
+      "Não foi possível realizar a exclusão da review, pois ela não se encontra no sistema"
     );
   });
 });

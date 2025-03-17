@@ -127,12 +127,10 @@ routerReview.put("/edit/:id", validateJWT, async (req, res): Promise<void> => {
       },
     });
     if (!userReviews) {
-      res
-        .status(401)
-        .json({ message: "Usuário não possui nenhuma review de livro" });
+      res.status(401).json({ message: "Review não encontrada no sistema" });
+      return;
     }
-    res.status(200).json({ message: "usuário editado com sucesso" })
-
+    res.status(200).json({ message: "Review editada com sucesso" });
   } catch (error) {
     res.status(500).json({ message: "Erro interno do servidor." });
     return;
