@@ -242,4 +242,40 @@ describe("Testando rota de criação de review", () => {
       "Não foi possível realizar a exclusão da review, pois ela não se encontra no sistema"
     );
   });
+
+  it("Delete da review realizada com sucesso no sistema", async () => {
+    prismaMock.reviews.deleteMany.mockResolvedValue({ count: 1 });
+    const token = jwt.sign({ user: 1, client: "API" }, "myTestSessionKey", {
+      expiresIn: "2h",
+    });
+
+    const response = await request(app)
+      .delete("/review/delete/1")
+      .set("Authorization", token)
+      .expect("Content-Type", /json/)
+      .expect(200);
+
+    expect(response.body).toHaveProperty(
+      "message",
+      "Review excluída com sucesso do sistema"
+    );
+  });
+
+  it("Delete da review realizada com sucesso no sistema", async () => {
+    prismaMock.reviews.deleteMany.mockResolvedValue({ count: 1 });
+    const token = jwt.sign({ user: 1, client: "API" }, "myTestSessionKey", {
+      expiresIn: "2h",
+    });
+
+    const response = await request(app)
+      .delete("/review/delete/1")
+      .set("Authorization", token)
+      .expect("Content-Type", /json/)
+      .expect(200);
+
+    expect(response.body).toHaveProperty(
+      "message",
+      "Review excluída com sucesso do sistema"
+    );
+  });
 });
