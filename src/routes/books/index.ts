@@ -81,3 +81,17 @@ routerBooks.get("/list", validateJWT, async (req, res): Promise<void> => {
     return;
   }
 });
+
+routerBooks.get(
+  "/delete/:bookId",
+  validateJWT,
+  async (req, res): Promise<void> => {
+    const bookId = req.params.bookId;
+    try {
+    } catch (error) {
+      console.error("Erro durante a listagem dos livros:", error);
+      res.status(500).json({ message: "Erro interno do servidor." });
+      return;
+    }
+  }
+);
